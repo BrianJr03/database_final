@@ -56,6 +56,7 @@ class TMB_DAO:
             return len(array)
 
         return -1
+
     def insert_message( self, batch ):
         """
         Insert an AIS message
@@ -78,7 +79,6 @@ class TMB_DAO:
 
         return -1
 
-
     def read_most_recent_ship_pos( self, batch ):
         """
         Insert a batch of messages
@@ -99,7 +99,29 @@ class TMB_DAO:
         if self.is_stub:
             return array
 
-        return -1    
+        return -1
+
+    def read_most_recent_ship_pos_in_tile( self, batch ):
+        """
+        Insert a batch of messages
+
+        :param batch: a string that represent a JSON array of docs
+        :type batch: str
+        :return: list of ship documents
+        :rtype: list
+        """
+        if batch == "" or batch == None:
+            return -1 
+
+        try:
+            array = json.loads( batch )
+        except Exception:
+            return -1
+
+        if self.is_stub:
+            return array
+
+        return -1        
 
     def read_all_ports( self, batch ):
         """
@@ -281,8 +303,6 @@ class TMBTest( unittest.TestCase ):
         sucess_code_num = tmb.insert_message( array )
         self.assertEqual((sucess_code_num), -1)  
 
-
-
     def test_delete_all_msg_timestamp_1( self ):      
         """
         Function `delete_all_msg_timestamp` takes a JSON parsable string as an input.
@@ -318,6 +338,24 @@ class TMBTest( unittest.TestCase ):
         array = json.loads( self.batch )
         ships = tmb.read_most_recent_ship_pos( array )
         self.assertEqual(ships, -1)  
+
+    def test_read_most_recent_ship_pos_in_tile1( self ):
+        """
+        Function `read_most_recent_ship_pos_in_tile` takes a JSON parsable string as an input.
+        Returns: list of ship documents
+        """
+        tmb = TMB_DAO(True)
+        ships = tmb.read_most_recent_ship_pos( self.batch )
+        self.assertTrue(type(ships) is list)
+
+    def test_read_most_recent_ship_pos_in_tile2( self ):
+        """
+        Function `read_most_recent_ship_pos_in_tile` fails nicely if input is not JSON parsable, or is empty.
+        """
+        tmb = TMB_DAO(True) 
+        array = json.loads( self.batch )
+        ships = tmb.read_most_recent_ship_pos( array )
+        self.assertEqual(ships, -1)     
 
     def test_read_all_ports1( self ):
         """
