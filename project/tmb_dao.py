@@ -56,6 +56,28 @@ class TMB_DAO:
             return len(array)
 
         return -1
+    def insert_message( self, batch ):
+        """
+        Insert an AIS message
+
+        :param batch: a string that represent a JSON array of docs
+        :type batch: str
+        :return: completion code number
+        :rtype: int
+        """
+        if batch == "" or batch == None:
+            return -1 
+
+        try:
+            array = json.loads( batch )
+        except Exception:
+            return -1
+
+        if self.is_stub:
+            return len(array)
+
+        return -1
+
 
     def read_most_recent_ship_pos( self, batch ):
         """
@@ -240,6 +262,26 @@ class TMBTest( unittest.TestCase ):
         array = json.loads( self.batch )
         inserted_count = tmb.insert_message_batch( array )
         self.assertEqual(inserted_count, -1)  
+
+    def test_insert_message_interface_1( self ):
+        """
+        Function `insert_message` takes a JSON parsable string as an input.
+        Returns: completion code number
+        """
+        tmb = TMB_DAO(True) 
+        sucess_code_num = tmb.insert_message( self.batch )
+        self.assertTrue(type(sucess_code_num) is int)
+
+    def test_insert_message_interface_2( self ):
+        """
+        Function `insert_message_batch` fails nicely if input is not JSON parsable, or is empty.
+        """
+        tmb = TMB_DAO(True) 
+        array = json.loads( self.batch )
+        sucess_code_num = tmb.insert_message( array )
+        self.assertEqual((sucess_code_num), -1)  
+
+
 
     def test_delete_all_msg_timestamp_1( self ):      
         """
