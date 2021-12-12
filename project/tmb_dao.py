@@ -1,30 +1,73 @@
 import unittest
 import json
 
-# # from mysqlutils import SQL_runner
-# import sys, re
-# from mysqlutils import SQL_runner
+import sys, re
+from mysqlutils import SQL_runner
 
 
 class TMB_DAO:
 
     def __init__(self, stub=False):
-        self.is_stub=stub
+        self.is_stub = stub
 
-    def delete_all_msg_timestamp(self, batch):
+    def insert_message_batch(self, batch):
         """
         Insert a batch of messages
 
-        :param batch: a string that represent a JSON array of docs
-        :type batch: str
-        :return: Number of successful deletions
+        :param: batch: a string that represent a JSON array of docs
+        :type: batch: str
+        :return: Number of successful insertions
+        :rtype: int
+        """
+        if batch == "" or batch == None:
+            return -1
+
+        try:
+            array = json.loads(batch)
+        except Exception:
+            return -1
+
+        if self.is_stub:
+            return len(array)
+
+        return -1
+
+    def insert_message(self, batch):
+        """
+        Insert an AIS message
+
+        :param: batch: a string that represent a JSON array of docs
+        :type: batch: str
+        :return: completion code number
         :rtype: int
         """
         if batch == "" or batch == None:
             return -1 
-        
+
         try:
-            array = json.loads( batch )
+            array = json.loads(batch)
+        except Exception:
+            return -1
+
+        if self.is_stub:
+            return len(array)
+
+        return -1
+
+    def delete_all_msg_timestamp(self, batch):
+        """
+        Delete all AIS Messages older than 5 minutes
+
+        :param: batch: a string that represent a JSON array of docs
+        :type: batch: str
+        :return: Number of successful deletions
+        :rtype: int
+        """
+        if batch == "" or batch == None:
+            return -1
+
+        try:
+            array = json.loads(batch)
         except Exception:
             return -1
 
@@ -33,58 +76,14 @@ class TMB_DAO:
 
         # Do things with dependencies: query MySQL, Mongo...
 
-        return -1  
-
-    def insert_message_batch( self, batch ):
-        """
-        Insert a batch of messages
-
-        :param batch: a string that represent a JSON array of docs
-        :type batch: str
-        :return: Number of successful insertions
-        :rtype: int
-        """
-        if batch == "" or batch == None:
-            return -1 
-
-        try:
-            array = json.loads( batch )
-        except Exception:
-            return -1
-
-        if self.is_stub:
-            return len(array)
-
         return -1
 
-    def insert_message( self, batch ):
+    def read_most_recent_ship_pos(self, batch):
         """
-        Insert an AIS message
+        Read all most recent ship positions
 
-        :param batch: a string that represent a JSON array of docs
-        :type batch: str
-        :return: completion code number
-        :rtype: int
-        """
-        if batch == "" or batch == None:
-            return -1 
-
-        try:
-            array = json.loads( batch )
-        except Exception:
-            return -1
-
-        if self.is_stub:
-            return len(array)
-
-        return -1
-
-    def read_most_recent_ship_pos( self, batch ):
-        """
-        Insert a batch of messages
-
-        :param batch: a string that represent a JSON array of docs
-        :type batch: str
+        :param: batch: a string that represent a JSON array of docs
+        :type: batch: str
         :return: list of ship documents
         :rtype: list
         """
@@ -92,7 +91,7 @@ class TMB_DAO:
             return -1 
 
         try:
-            array = json.loads( batch )
+            array = json.loads(batch)
         except Exception:
             return -1
 
@@ -101,12 +100,57 @@ class TMB_DAO:
 
         return -1
 
-    def read_most_recent_ship_pos_in_tile( self, batch ):
+    def read_pos_MMSI(self, batch):
         """
-        Insert a batch of messages
+        Read most recent position of given MMSI
 
-        :param batch: a string that represent a JSON array of docs
-        :type batch: str
+        :param: batch: a string that represent a JSON array of docs
+        :type: batch: str
+        :return: a single position document
+        :rtype: dict
+        """
+        if batch == "" or batch == None:
+            return -1
+
+        try:
+            array = json.loads(batch)
+        except Exception:
+            return -1
+
+        if self.is_stub:
+            return array[0]
+
+        return -1
+
+    def read_vessel_info(self, batch):
+        """
+        Read permanent or transient vessel information matching the given MMSI,
+        and 0 or more additional criteria: IMO, Name, CallSign
+
+        :param: batch: a string that represent a JSON array of docs
+        :type: batch: str
+        :return: a single vessel document
+        :rtype: dict
+        """
+        if batch == "" or batch == None:
+            return -1
+
+        try:
+            array = json.loads(batch)
+        except Exception:
+            return -1
+
+        if self.is_stub:
+            return array[0]
+
+        return -1
+
+    def read_most_recent_ship_pos_in_tile(self, batch):
+        """
+        Read all most recent ship positions in the given tile
+
+        :param: batch: a string that represent a JSON array of docs
+        :type: batch: str
         :return: list of ship documents
         :rtype: list
         """
@@ -114,7 +158,7 @@ class TMB_DAO:
             return -1 
 
         try:
-            array = json.loads( batch )
+            array = json.loads(batch)
         except Exception:
             return -1
 
@@ -123,12 +167,12 @@ class TMB_DAO:
 
         return -1        
 
-    def read_all_ports( self, batch ):
+    def read_all_ports(self, batch):
         """
-        Insert a batch of messages
+        Read all ports matching the given name and (optional) country
 
-        :param batch: a string that represent a JSON array of docs
-        :type batch: str
+        :param: batch: a string that represent a JSON array of docs
+        :type: batch: str
         :return: list of Port documents
         :rtype: list
         """
@@ -136,7 +180,7 @@ class TMB_DAO:
             return -1 
 
         try:
-            array = json.loads( batch )
+            array = json.loads(batch)
         except Exception:
             return -1
 
@@ -145,12 +189,12 @@ class TMB_DAO:
 
         return -1  
 
-    def read_all_ship_pos_scale3( self, batch ):
+    def read_all_ship_pos_scale3(self, batch):
         """
-        Insert a batch of messages
+        Read all ship positions in the tile of scale 3 containing the given port
 
-        :param batch: a string that represent a JSON array of docs
-        :type batch: str
+        :param: batch: a string that represent a JSON array of docs
+        :type: batch: str
         :return: list of (Port or Position) documents 
         :rtype: list
         """
@@ -158,7 +202,7 @@ class TMB_DAO:
             return -1 
 
         try:
-            array = json.loads( batch )
+            array = json.loads(batch)
         except Exception:
             return -1   
 
@@ -167,12 +211,12 @@ class TMB_DAO:
 
         return -1    
 
-    def read_last_5_pos( self, batch ):
+    def read_last_5_pos(self, batch):
         """
-        Insert a batch of messages
+        Read last 5 positions of given MMSI
 
-        :param batch: a string that represent a JSON array of docs
-        :type batch: str
+        :param: batch: a string that represent a JSON array of docs
+        :type: batch: str
         :return: a single document 
         :rtype: dict
         """
@@ -180,7 +224,7 @@ class TMB_DAO:
             return -1 
 
         try:
-            array = json.loads( batch )
+            array = json.loads(batch)
         except Exception:
             return -1
 
@@ -193,8 +237,8 @@ class TMB_DAO:
         """
         Read most recent positions of ships headed to port with given ID
 
-        :param batch: a string that represent a JSON array of docs
-        :type batch: str
+        :param: batch: a string that represent a JSON array of docs
+        :type: batch: str
         :return: a list of position documents
         :rtype: list
         """
@@ -202,7 +246,7 @@ class TMB_DAO:
             return -1
 
         try:
-            array = json.loads( batch )
+            array = json.loads(batch)
         except Exception:
             return -1
 
@@ -215,8 +259,8 @@ class TMB_DAO:
         """
         Read most recent positions of ships headed to given port
 
-        :param batch: a string that represent a JSON array of docs
-        :type batch: str
+        :param: batch: a string that represent a JSON array of docs
+        :type: batch: str
         :return: a list of position documents or array of port documents
         :rtype: list
         """
@@ -224,7 +268,7 @@ class TMB_DAO:
             return -1
 
         try:
-            array = json.loads( batch )
+            array = json.loads(batch)
         except Exception:
             return -1
 
@@ -237,8 +281,8 @@ class TMB_DAO:
         """
         Given a background map tile for zoom level 1 (2), find the 4 tiles of zoom level 2 (3) that are contained in it
 
-        :param batch: a string that represent a JSON array of docs
-        :type batch: str
+        :param: batch: a string that represent a JSON array of docs
+        :type: batch: str
         :return: a list of map tile description documents
         :rtype: list
         """
@@ -246,7 +290,29 @@ class TMB_DAO:
             return -1
 
         try:
-            array = json.loads( batch )
+            array = json.loads(batch)
+        except Exception:
+            return -1
+
+        if self.is_stub:
+            return array
+
+        return -1
+
+    def find_tile_from_id(self, batch):
+        """
+        Given a tile ID, get the actual tile (a PNG file)
+
+        :param: batch: a string that represent a JSON array of docs
+        :type: batch: str
+        :return: a PNG file
+        :rtype: binary data
+        """
+        if batch == "" or batch == None:
+            return -1
+
+        try:
+            array = json.loads(batch)
         except Exception:
             return -1
 
@@ -256,9 +322,7 @@ class TMB_DAO:
         return -1
 
 
-
-
-class TMBTest( unittest.TestCase ):
+class TMBTest(unittest.TestCase):
     batch = """[ {\"Timestamp\":\"2020-11-18T00:00:00.000Z\",\"Class\":\"Class A\",\"MMSI\":304858000,\"MsgType\":\"position_report\",\"Position\":{\"type\":\"Point\",\"coordinates\":[55.218332,13.371672]},\"Status\":\"Under way using engine\",\"SoG\":10.8,\"CoG\":94.3,\"Heading\":97},
                 {\"Timestamp\":\"2020-11-19T00:00:00.000Z\",\"Class\":\"AtoN\",\"MMSI\":992111840,\"MsgType\":\"static_data\",\"IMO\":\"Unknown\",\"Name\":\"WIND FARM BALTIC1NW\",\"VesselType\":\"Undefined\",\"Length\":60,\"Breadth\":60,\"A\":30,\"B\":30,\"C\":30,\"D\":30},
                 {\"Timestamp\":\"2020-11-20T00:00:00.000Z\",\"Class\":\"Class A\",\"MMSI\":219005465,\"MsgType\":\"position_report\",\"Position\":{\"type\":\"Point\",\"coordinates\":[54.572602,11.929218]},\"Status\":\"Under way using engine\",\"RoT\":0,\"SoG\":0,\"CoG\":298.7,\"Heading\":203},
@@ -267,148 +331,184 @@ class TMBTest( unittest.TestCase ):
                 {\"Timestamp\":\"2020-11-18T00:00:00.000Z\",\"Class\":\"Class A\",\"MMSI\":257385000,\"MsgType\":\"position_report\",\"Position\":{\"type\":\"Point\",\"coordinates\":[55.219403,13.127725]},\"Status\":\"Under way using engine\",\"RoT\":25.7,\"SoG\":12.3,\"CoG\":96.5,\"Heading\":101},
                 {\"Timestamp\":\"2020-11-18T00:00:00.000Z\",\"Class\":\"Class A\",\"MMSI\":376503000,\"MsgType\":\"position_report\",\"Position\":{\"type\":\"Point\",\"coordinates\":[54.519373,11.47914]},\"Status\":\"Under way using engine\",\"RoT\":0,\"SoG\":7.6,\"CoG\":294.4,\"Heading\":290} ]"""
 
-    def test_insert_message_batch_interface_1( self ):
+    def test_insert_message_batch_interface_1(self):
         """
         Function `insert_message_batch` takes a JSON parsable string as an input.
         Returns: number (int) of insertions
         """
         tmb = TMB_DAO(True) 
-        inserted_count = tmb.insert_message_batch( self.batch )
+        inserted_count = tmb.insert_message_batch(self.batch)
         self.assertTrue(type(inserted_count) is int and inserted_count >=0)
 
-    def test_insert_message_batch_interface_2( self ):
+    def test_insert_message_batch_interface_2(self):
         """
         Function `insert_message_batch` fails nicely if input is not JSON parsable, or is empty.
         """
         tmb = TMB_DAO(True) 
-        array = json.loads( self.batch )
-        inserted_count = tmb.insert_message_batch( array )
+        array = json.loads(self.batch)
+        inserted_count = tmb.insert_message_batch(array)
         self.assertEqual(inserted_count, -1)  
 
-    def test_insert_message_interface_1( self ):
+    def test_insert_message_interface_1(self):
         """
         Function `insert_message` takes a JSON parsable string as an input.
         Returns: completion code number
         """
         tmb = TMB_DAO(True) 
-        sucess_code_num = tmb.insert_message( self.batch )
-        self.assertTrue(type(sucess_code_num) is int)
+        success_code_num = tmb.insert_message(self.batch)
+        self.assertTrue(type(success_code_num) is int)
 
-    def test_insert_message_interface_2( self ):
+    def test_insert_message_interface_2(self):
         """
         Function `insert_message_batch` fails nicely if input is not JSON parsable, or is empty.
         """
         tmb = TMB_DAO(True) 
-        array = json.loads( self.batch )
-        sucess_code_num = tmb.insert_message( array )
-        self.assertEqual((sucess_code_num), -1)  
+        array = json.loads(self.batch)
+        success_code_num = tmb.insert_message(array)
+        self.assertEqual(success_code_num, -1)
 
-    def test_delete_all_msg_timestamp_1( self ):      
+    def test_delete_all_msg_timestamp_1(self):
         """
         Function `delete_all_msg_timestamp` takes a JSON parsable string as an input.
         Returns: number (int) of deletions
         """
         tmb = TMB_DAO(True)
-        deletion_count = tmb.delete_all_msg_timestamp( self.batch )
+        deletion_count = tmb.delete_all_msg_timestamp(self.batch)
         self.assertTrue(type(deletion_count) is int)
 
-    def test_delete_all_msg_timestamp_2( self ):
+    def test_delete_all_msg_timestamp_2(self):
         """
         Function `delete_all_msg_timestamp` fails nicely if input is not JSON parsable, or is empty.
         """
         tmb = TMB_DAO(True) 
-        array = json.loads( self.batch )
-        deletion_count = tmb.delete_all_msg_timestamp( array )
+        array = json.loads(self.batch)
+        deletion_count = tmb.delete_all_msg_timestamp(array)
         self.assertEqual(deletion_count, -1)
 
-    def test_read_most_recent_ship_pos1( self ):
+    def test_read_most_recent_ship_pos1(self):
         """
         Function `read_most_recent_ship_pos` takes a JSON parsable string as an input.
         Returns: list of ship documents
         """
         tmb = TMB_DAO(True)
-        ships = tmb.read_most_recent_ship_pos( self.batch )
+        ships = tmb.read_most_recent_ship_pos(self.batch)
         self.assertTrue(type(ships) is list)
 
-    def test_read_most_recent_ship_pos2( self ):
+    def test_read_most_recent_ship_pos2(self):
         """
         Function `read_most_recent_ship_pos` fails nicely if input is not JSON parsable, or is empty.
         """
         tmb = TMB_DAO(True) 
-        array = json.loads( self.batch )
-        ships = tmb.read_most_recent_ship_pos( array )
-        self.assertEqual(ships, -1)  
+        array = json.loads(self.batch)
+        ships = tmb.read_most_recent_ship_pos(array)
+        self.assertEqual(ships, -1)
 
-    def test_read_most_recent_ship_pos_in_tile1( self ):
+    def test_read_pos_MMSI1(self):
+        """
+        Function `read_pos_MMSI` takes a JSON parsable string as an input.
+        Returns: a position document
+        """
+        tmb = TMB_DAO(True)
+        ships = tmb.read_pos_MMSI(self.batch)
+        self.assertTrue(type(ships) is dict)
+
+    def test_read_pos_MMSI2(self):
+        """
+        Function `read_pos_MMSI` fails nicely if input is not JSON parsable, or is empty.
+        """
+        tmb = TMB_DAO(True)
+        array = json.loads(self.batch)
+        document = tmb.read_pos_MMSI(array)
+        self.assertEqual(document, -1)
+
+    def test_read_vessel_info1(self):
+        """
+        Function `read_vessel_info` takes a JSON parsable string as an input.
+        Returns: a vessel document
+        """
+        tmb = TMB_DAO(True)
+        ships = tmb.read_vessel_info(self.batch)
+        self.assertTrue(type(ships) is dict)
+
+    def test_read_vessel_info2(self):
+        """
+        Function `read_vessel_info` fails nicely if input is not JSON parsable, or is empty.
+        """
+        tmb = TMB_DAO(True)
+        array = json.loads(self.batch)
+        document = tmb.read_vessel_info(array)
+        self.assertEqual(document, -1)
+
+    def test_read_most_recent_ship_pos_in_tile1(self):
         """
         Function `read_most_recent_ship_pos_in_tile` takes a JSON parsable string as an input.
         Returns: list of ship documents
         """
         tmb = TMB_DAO(True)
-        ships = tmb.read_most_recent_ship_pos( self.batch )
+        ships = tmb.read_most_recent_ship_pos(self.batch)
         self.assertTrue(type(ships) is list)
 
-    def test_read_most_recent_ship_pos_in_tile2( self ):
+    def test_read_most_recent_ship_pos_in_tile2(self):
         """
         Function `read_most_recent_ship_pos_in_tile` fails nicely if input is not JSON parsable, or is empty.
         """
         tmb = TMB_DAO(True) 
-        array = json.loads( self.batch )
-        ships = tmb.read_most_recent_ship_pos( array )
+        array = json.loads(self.batch)
+        ships = tmb.read_most_recent_ship_pos(array)
         self.assertEqual(ships, -1)     
 
-    def test_read_all_ports1( self ):
+    def test_read_all_ports1(self):
         """
         Function `read_all_ports` takes a JSON parsable string as an input.
         Returns: list of Port documents
         """
         tmb = TMB_DAO(True)
-        ships = tmb.read_most_recent_ship_pos( self.batch )
+        ships = tmb.read_most_recent_ship_pos(self.batch)
         self.assertTrue(type(ships) is list)
 
-    def test_read_all_ports2( self ):
+    def test_read_all_ports2(self):
         """
         Function `read_all_ports` fails nicely if input is not JSON parsable, or is empty.
         """
         tmb = TMB_DAO(True) 
-        array = json.loads( self.batch )
-        ships = tmb.read_most_recent_ship_pos( array )
+        array = json.loads(self.batch)
+        ships = tmb.read_most_recent_ship_pos(array)
         self.assertEqual(ships, -1) 
 
-    def test_all_ship_pos_scale3_1( self ):
+    def test_all_ship_pos_scale3_1(self):
         """
         Function `read_all_ship_pos_scale3` takes a JSON parsable string as an input.
         Returns: list of (Port or Position) documents
         """
         tmb = TMB_DAO(True)
-        documents = tmb.read_all_ship_pos_scale3( self.batch )
+        documents = tmb.read_all_ship_pos_scale3(self.batch)
         self.assertTrue(type(documents) is list)
 
-    def test_all_ship_pos_scale3_2( self ):
+    def test_all_ship_pos_scale3_2(self):
         """
         Function `read_all_ship_pos_scale3` fails nicely if input is not JSON parsable, or is empty.
         """
         tmb = TMB_DAO(True) 
-        array = json.loads( self.batch )
-        documents = tmb.read_all_ship_pos_scale3( array )
+        array = json.loads(self.batch)
+        documents = tmb.read_all_ship_pos_scale3(array)
         self.assertEqual(documents, -1)   
 
-    def test_read_last_5_pos1( self ):
+    def test_read_last_5_pos1(self):
         """
         Function `read_last_5_pos` takes a JSON parsable string as an input.
         Returns: a single document (dict)
         """
         tmb = TMB_DAO(True)
-        document = tmb.read_last_5_pos( self.batch )
+        document = tmb.read_last_5_pos(self.batch)
         self.assertTrue(type(document) is dict)
 
-    def test_read_last_5_pos2( self ):
+    def test_read_last_5_pos2(self):
         """
         Function `read_last_5_pos` fails nicely if input is not JSON parsable, or is empty.
         """
         tmb = TMB_DAO(True) 
-        array = json.loads( self.batch )
-        document = tmb.read_last_5_pos( array )
+        array = json.loads(self.batch)
+        document = tmb.read_last_5_pos(array)
         self.assertEqual(document, -1)
 
     def test_read_position_to_port_id1(self):
@@ -463,6 +563,24 @@ class TMBTest( unittest.TestCase ):
         tmb = TMB_DAO(True)
         array = json.loads(self.batch)
         document = tmb.find_tiles_zoom_2(array)
+        self.assertEqual(document, -1)
+
+    def test_find_tile_from_id1(self):
+        """
+        Function 'find_tile_from_id' takes a JSON parsable string as an input.
+        Returns: a png file (binary data)
+        """
+        tmb = TMB_DAO(True)
+        document = tmb.find_tiles_zoom_2(self.batch)
+        self.assertTrue(type(document) is bytes)
+
+    def test_find_tile_from_id2(self):
+        """
+        Function 'find_tile_from_id' fails nicely if input is not JSON parsable, or is empty.
+        """
+        tmb = TMB_DAO(True)
+        array = json.loads(self.batch)
+        document = tmb.find_tile_from_id(array)
         self.assertEqual(document, -1)
 
 
