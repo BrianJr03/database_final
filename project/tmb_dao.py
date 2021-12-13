@@ -105,13 +105,13 @@ class TMB_DAO:
             print(f"Total Insertion Count: {pos_insertions + static_insertions + ais_msg_insertions}")
             return pos_insertions + static_insertions     
 
-    def insert_message(self, batch):
+    def insert_message_batch(self, batch):
         """
-        Insert an AIS message
+        Insert a batch of messages
 
         :param: batch: a string that represent a JSON array of docs
         :type: batch: str
-        :return: completion code number
+        :return: Number of successful insertions
         :rtype: int
         """
         if batch == "" or batch == None:
@@ -122,10 +122,84 @@ class TMB_DAO:
         except Exception:
             return -1
 
-        if self.is_stub:          
-            return len(array)
-        
-        return -1
+        if self.is_stub:
+            # return len(array)
+
+            pos_insertions = 0
+            static_insertions = 0
+            ais_msg_insertions = 0    
+
+            for ais_msg in array:
+
+                date_time_obj = datetime.strptime(ais_msg["Timestamp"], '%Y-%m-%dT%H:%M:%S.%fZ')
+
+                # TODO: Auto Increment IDs
+
+                QUERY1=f"""
+                SELECT Id FROM AIS_MESSAGE  
+                ORDER BY Id DESC  
+                LIMIT 1;
+                """
+                rs = SQL_runner().run(QUERY1)
+                id = rs[0][0]
+                id += 1
+
+                QUERY2=f"""
+                INSERT INTO AIS_MESSAGE 
+                (Id, Timestamp, MMSI, Class) 
+                VALUES (
+                {id},
+                '{date_time_obj}', 
+                '{ais_msg["MMSI"]}', 
+                '{ais_msg["Class"]}');
+                SELECT ROW_COUNT();
+                """
+                rs = SQL_runner().run(QUERY2)
+                ais_msg_insertions += rs[0][0]
+
+                if ais_msg["MsgType"] == "static_data":
+
+                    QUERY3=f"""
+                    INSERT INTO STATIC_DATA 
+                    (AIS_IMO, Name, VesselType, Length, Breadth) 
+                    VALUES (
+                    '{ais_msg["IMO"] if type(ais_msg["IMO"]) is int else 1}', 
+                    '{ais_msg["Name"]}', 
+                    '{ais_msg["VesselType"]}', 
+                    {ais_msg["Length"]}, 
+                    {ais_msg["Breadth"]}); 
+                    SELECT ROW_COUNT();
+                    """
+                    rs = SQL_runner().run(QUERY3)
+                    static_insertions += rs[0][0]
+
+                if ais_msg["MsgType"] == "position_report":
+                    
+                    if "RoT" not in ais_msg:
+                        ais_msg["RoT"] = 0 
+
+                    QUERY4=f"""
+                    INSERT INTO POSITION_REPORT 
+                    (AISMessage_Id, NavigationalStatus, Longitude, Latitude, RoT, SoG, CoG, Heading) 
+                    VALUES (
+                    5, # TODO: This shouldn't be hardcoded, not sure how to handle the unique id here
+                    '{ais_msg["Status"]}', 
+                    {ais_msg["Position"]["coordinates"][1]}, 
+                    {ais_msg["Position"]["coordinates"][0]}, 
+                    {ais_msg["RoT"]}, 
+                    {ais_msg["SoG"]}, 
+                    {ais_msg["CoG"]}, 
+                    {ais_msg["Heading"]}); 
+                    SELECT ROW_COUNT();
+                    """
+                    rs = SQL_runner().run(QUERY4)
+                    pos_insertions += rs[0][0]
+
+            print(f"\nAIS Message Insertions: {ais_msg_insertions}")
+            print(f"Static Data Insertions: {static_insertions}")
+            print(f"Position Report Insertions: {pos_insertions}")        
+            print(f"Total Insertion Count: {pos_insertions + static_insertions + ais_msg_insertions}")
+            return pos_insertions + static_insertions
 
     def delete_all_msg_timestamp(self, batch):
         """
@@ -145,24 +219,24 @@ class TMB_DAO:
             return -1
 
         if self.is_stub:
-            # deletions = 0
-            # for ais_msg in array:
-            #     now = datetime.now()
-            #     timestamp = ais_msg["Timestamp"]
-            #     date_time_obj = datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S.%fZ')
+            deletions = 0
+            for ais_msg in array:
+                now = datetime.now()
+                timestamp = ais_msg["Timestamp"]
+                date_time_obj = datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S.%fZ')
 
-            #     if now - date_time_obj > timedelta(minutes=5):
-            #         QUERY = f"""
-            #         DELETE FROM AIS_MESSAGE WHERE Timestamp = {timestamp};
-            #         SELECT ROW_COUNT();
-            #         """  
-            #         rs = SQL_runner().run(QUERY) 
-            #         print(rs)
-            #         deletions += rs[0]
-            #         print(deletions)  
-            return len(array)
+                if now - date_time_obj > timedelta(minutes=5):
+                    QUERY = f"""
+                    DELETE FROM AIS_MESSAGE, POSITION_REPORT, STATIC_DATA 
+                    WHERE Timestamp = '{date_time_obj}' AND AIS_MESSAGE.Id = POSITION_REPORT.AISMessage_Id AND 
+                    AIS_MESSAGE.Id = STATIC_DATA.AISMessage_Id AND POSITION_REPORT.LastStaticData_Id = STATIC_DATA.DestinationPort_Id;
+                    SELECT ROW_COUNT();
+                    """
 
-        return -1
+                    rs = SQL_runner().run(QUERY)
+                    deletions += rs[0][0]
+                    print(deletions)
+            return deletions
 
     def read_most_recent_ship_pos(self, batch):
         """
@@ -182,7 +256,7 @@ class TMB_DAO:
             return -1
 
         if self.is_stub:
-            return array    
+            return array
 
         QUERY="""
             SELECT MMSI, Latitude, Longitude, AIS_MESSAGE.Vessel_IMO FROM POSITION_REPORT, AIS_MESSAGE, 
@@ -192,7 +266,7 @@ class TMB_DAO:
         rs = SQL_runner().run(QUERY)
         return rs
 
-    def read_pos_MMSI(self, batch, MMSI):
+    def read_pos_MMSI(self, batch):
         """
         Read most recent position of given MMSI
 
@@ -210,10 +284,14 @@ class TMB_DAO:
             return -1
 
         if self.is_stub:
-            return array[0]
+            mmsi = input("Please enter an MMSI to search:")
 
-
-        return -1
+            QUERY = f"""SELECT MMSI, Latitude, Longitude, Vessel_IMO 
+            FROM POSITION_REPORT, AIS_MESSAGE WHERE MMSI = {mmsi} AND POSITION_REPORT.AISMessage_Id = AIS_MESSAGE.Id 
+            ORDER BY Timestamp LIMIT 1;"""
+            rs = SQL_runner().run(QUERY)
+            print(rs)
+            return rs
 
     def read_vessel_info(self, batch):
         """
