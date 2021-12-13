@@ -258,7 +258,13 @@ class TMB_DAO:
         if self.is_stub:
             return array
 
-        return -1        
+        QUERY="""
+            SELECT MMSI, Latitude, Longitude, AIS_MESSAGE.Vessel_IMO FROM POSITION_REPORT, AIS_MESSAGE, 
+            (SELECT max(Timestamp) as time, Vessel_IMO from AIS_MESSAGE GROUP BY Vessel_IMO) 
+            RECENT_SHIP WHERE POSITION_REPORT.AISMessage_Id = AIS_MESSAGE.Id AND AIS_MESSAGE.Vessel_IMO = RECENT_SHIP.Vessel_IMO;
+            """
+        rs = SQL_runner().run(QUERY)
+        return rs        
 
     def read_all_ports(self, batch):
         """
