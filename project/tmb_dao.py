@@ -364,7 +364,16 @@ class TMB_DAO:
         if self.is_stub:
             return array
 
-        return -1  
+        name = "name"
+        country = "country"
+
+        QUERY = f"""
+        SELECT * FROM PORT WHERE Name = {name} and Country = {country};
+        """
+
+        rs = SQL_runner().run(QUERY)
+        return rs
+
 
     def read_all_ship_pos_scale3(self, batch):
         """
@@ -428,9 +437,16 @@ class TMB_DAO:
             return -1
 
         if self.is_stub:
-            return array
+            return array[0]
 
-        return -1
+        given_id = "id"
+
+        QUERY = f"""
+        SELECT MMSI, Latitude, Longitude, Vessel_IMO FROM POSITION_REPORT, AIS_MESSAGE 
+        WHERE AIS_MESSAGE.Id = {given_id} AND POSITION_REPORT.AISMessage_Id = AIS_MESSAGE.Id;
+        """
+        rs = SQL_runner().run(QUERY)
+        return rs
 
     def read_position_given_port(self, batch):
         """
@@ -497,7 +513,12 @@ class TMB_DAO:
         if self.is_stub:
             return bytes(array)
 
-        return -1
+        id = "id"
+        QUERY = f"""
+        SELECT RasterFile FROM MAP_VIEW WHERE Id={id};
+        """
+        rs = SQL_runner().run(QUERY)
+        return rs
 
 
 class TMBTest(unittest.TestCase):
