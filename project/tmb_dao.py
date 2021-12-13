@@ -199,7 +199,7 @@ class TMB_DAO:
             print(f"Static Data Insertions: {static_insertions}")
             print(f"Position Report Insertions: {pos_insertions}")        
             print(f"Total Insertion Count: {pos_insertions + static_insertions + ais_msg_insertions}")
-            return pos_insertions + static_insertions
+            return pos_insertions + static_insertions + ais_msg_insertions
 
     def delete_all_msg_timestamp(self, batch):
         """
