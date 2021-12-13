@@ -134,8 +134,6 @@ class TMB_DAO:
         if self.is_stub:
             return len(array)
 
-        # Do things with dependencies: query MySQL, Mongo...
-
         return -1
 
     def read_most_recent_ship_pos(self, batch):
@@ -156,13 +154,15 @@ class TMB_DAO:
             return -1
 
         if self.is_stub:
-            return array
+            return array    
 
         QUERY="""
-        SELECT MMSI, Latitude, Longitude, Vessel_IMO FROM POSITION_REPORT, 
-        AIS_MESSAGE WHERE POSITION_REPORT.AISMessage_Id = AIS_MESSAGE.Id ORDER BY Timestamp GROUP BY Vessel_IMO;
-        """
-        return -1
+            SELECT MMSI, Latitude, Longitude, AIS_MESSAGE.Vessel_IMO FROM POSITION_REPORT, AIS_MESSAGE, 
+            (SELECT max(Timestamp) as time, Vessel_IMO from AIS_MESSAGE GROUP BY Vessel_IMO) 
+            RECENT_SHIP WHERE POSITION_REPORT.AISMessage_Id = AIS_MESSAGE.Id AND AIS_MESSAGE.Vessel_IMO = RECENT_SHIP.Vessel_IMO;
+            """
+        rs = SQL_runner().run(QUERY)
+        return rs
 
     def read_pos_MMSI(self, batch, MMSI):
         """
