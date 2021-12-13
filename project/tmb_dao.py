@@ -27,55 +27,81 @@ class TMB_DAO:
             return -1
 
         if self.is_stub:
-            return len(array)
+            # return len(array)
 
-        pos_insertions = 0
-        static_insertions = 0    
+            pos_insertions = 0
+            static_insertions = 0
+            ais_msg_insertions = 0    
 
-        for ais_msg in array:
+            for ais_msg in array:
 
-            if ais_msg["MsgType"] == "static_data":
+                date_time_obj = datetime.strptime(ais_msg["Timestamp"], '%Y-%m-%dT%H:%M:%S.%fZ')
 
-                QUERY=f"""
-                INSERT INTO STATIC_DATA 
-                (AIS_IMO, Name, VesselType, Length, Breadth) 
+                QUERY1=f"""
+                SELECT Id FROM AIS_MESSAGE  
+                ORDER BY Id DESC  
+                LIMIT 1;
+                """
+                rs = SQL_runner().run(QUERY1)
+                id = rs[0][0]
+                id += 1
+
+                QUERY2=f"""
+                INSERT INTO AIS_MESSAGE 
+                (Id, Timestamp, MMSI, Class) 
                 VALUES (
-                '{ais_msg["IMO"] if type(ais_msg["IMO"]) is int else 1}', 
-                '{ais_msg["Name"]}', 
-                '{ais_msg["VesselType"]}', 
-                {ais_msg["Length"]}, 
-                {ais_msg["Breadth"]}); 
+                {id},
+                '{date_time_obj}', 
+                '{ais_msg["MMSI"]}', 
+                '{ais_msg["Class"]}');
                 SELECT ROW_COUNT();
                 """
-                rs = SQL_runner().run(QUERY)
-                static_insertions += rs[0][0]
+                rs = SQL_runner().run(QUERY2)
+                ais_msg_insertions += rs[0][0]
 
-            if ais_msg["MsgType"] == "position_report":
-                
-                if "RoT" not in ais_msg:
-                    ais_msg["RoT"] = 0 
+                if ais_msg["MsgType"] == "static_data":
 
-                QUERY=f"""
-                INSERT INTO POSITION_REPORT 
-                (AISMessage_Id, NavigationalStatus, Longitude, Latitude, RoT, SoG, CoG, Heading) 
-                VALUES (
-                5,
-                '{ais_msg["Status"]}', 
-                {ais_msg["Position"]["coordinates"][1]}, 
-                {ais_msg["Position"]["coordinates"][0]}, 
-                {ais_msg["RoT"]}, 
-                {ais_msg["SoG"]}, 
-                {ais_msg["CoG"]}, 
-                {ais_msg["Heading"]}); 
-                SELECT ROW_COUNT();
-                """
-                rs = SQL_runner().run(QUERY)
-                pos_insertions += rs[0][0]
+                    QUERY3=f"""
+                    INSERT INTO STATIC_DATA 
+                    (AIS_IMO, Name, VesselType, Length, Breadth) 
+                    VALUES (
+                    '{ais_msg["IMO"] if type(ais_msg["IMO"]) is int else 1}', 
+                    '{ais_msg["Name"]}', 
+                    '{ais_msg["VesselType"]}', 
+                    {ais_msg["Length"]}, 
+                    {ais_msg["Breadth"]}); 
+                    SELECT ROW_COUNT();
+                    """
+                    rs = SQL_runner().run(QUERY3)
+                    static_insertions += rs[0][0]
 
-        print(f"\nStatic Data Insertions: {static_insertions}")
-        print(f"Position Report Insertions: {pos_insertions}")        
-        print(f"Total Insertion Count: {pos_insertions + static_insertions}")
-        return pos_insertions + static_insertions     
+                if ais_msg["MsgType"] == "position_report":
+                    
+                    if "RoT" not in ais_msg:
+                        ais_msg["RoT"] = 0 
+
+                    QUERY4=f"""
+                    INSERT INTO POSITION_REPORT 
+                    (AISMessage_Id, NavigationalStatus, Longitude, Latitude, RoT, SoG, CoG, Heading) 
+                    VALUES (
+                    5, # TODO: This shouldn't be hardcoded, not sure how to handle the unique id here
+                    '{ais_msg["Status"]}', 
+                    {ais_msg["Position"]["coordinates"][1]}, 
+                    {ais_msg["Position"]["coordinates"][0]}, 
+                    {ais_msg["RoT"]}, 
+                    {ais_msg["SoG"]}, 
+                    {ais_msg["CoG"]}, 
+                    {ais_msg["Heading"]}); 
+                    SELECT ROW_COUNT();
+                    """
+                    rs = SQL_runner().run(QUERY4)
+                    pos_insertions += rs[0][0]
+
+            print(f"\nAIS Message Insertions: {ais_msg_insertions}")
+            print(f"Static Data Insertions: {static_insertions}")
+            print(f"Position Report Insertions: {pos_insertions}")        
+            print(f"Total Insertion Count: {pos_insertions + static_insertions + ais_msg_insertions}")
+            return pos_insertions + static_insertions     
 
     def insert_message(self, batch):
         """
@@ -94,22 +120,7 @@ class TMB_DAO:
         except Exception:
             return -1
 
-        if self.is_stub:
-            deletions = 0
-            for ais_msg in array:
-                now = datetime.now()
-                timestamp = ais_msg["Timestamp"]
-                date_time_obj = datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S.%fZ')
-
-                if now - date_time_obj > timedelta(minutes=5):
-                    QUERY = f"""
-                    DELETE FROM AIS_MESSAGE WHERE Timestamp = {timestamp};
-                    SELECT ROW_COUNT();
-                    """  
-                    rs = SQL_runner().run(QUERY) 
-                    print(rs)
-                    deletions += rs[0]
-                    print(deletions)            
+        if self.is_stub:          
             return len(array)
         
         return -1
@@ -132,6 +143,21 @@ class TMB_DAO:
             return -1
 
         if self.is_stub:
+            # deletions = 0
+            # for ais_msg in array:
+            #     now = datetime.now()
+            #     timestamp = ais_msg["Timestamp"]
+            #     date_time_obj = datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S.%fZ')
+
+            #     if now - date_time_obj > timedelta(minutes=5):
+            #         QUERY = f"""
+            #         DELETE FROM AIS_MESSAGE WHERE Timestamp = {timestamp};
+            #         SELECT ROW_COUNT();
+            #         """  
+            #         rs = SQL_runner().run(QUERY) 
+            #         print(rs)
+            #         deletions += rs[0]
+            #         print(deletions)  
             return len(array)
 
         return -1
@@ -475,7 +501,7 @@ class TMBTest(unittest.TestCase):
         Returns: a position document
         """
         tmb = TMB_DAO(True)
-        ships = tmb.read_pos_MMSI(self.batch)
+        ships = tmb.read_pos_MMSI(self.batch, 1)
         self.assertTrue(type(ships) is dict)
 
     def test_read_pos_MMSI2(self):
@@ -484,7 +510,7 @@ class TMBTest(unittest.TestCase):
         """
         tmb = TMB_DAO(True)
         array = json.loads(self.batch)
-        document = tmb.read_pos_MMSI(array)
+        document = tmb.read_pos_MMSI(array, 1)
         self.assertEqual(document, -1)
 
     def test_read_vessel_info1(self):
