@@ -1,10 +1,9 @@
 import unittest
 import json
+import random
 
-# # from mysqlutils import SQL_runner
-# import sys, re
-# from mysqlutils import SQL_runner
-
+from mysqlutils import SQL_runner
+import sys, re
 
 class TMB_DAO:
 
@@ -35,9 +34,10 @@ class TMB_DAO:
 
         return -1  
 
+    # ! TODO
     def insert_message_batch( self, batch ):
         """
-        Insert a batch of messages
+        Insert a batch of AIS messages
 
         :param batch: a string that represent a JSON array of docs
         :type batch: str
@@ -45,16 +45,64 @@ class TMB_DAO:
         :rtype: int
         """
         if batch == "" or batch == None:
-            return -1 
+            return -1
 
         try:
             array = json.loads( batch )
-        except Exception:
+        except Exception as e:
+            # print(e)
             return -1
 
-        if self.is_stub:
-            return len(array)
+        pos_insertions = 0
+        static_insertions = 0
 
+        if self.is_stub:
+            for ais_msg in array:
+
+                if ais_msg["MsgType"] == "static_data":
+
+                    QUERY=f"""
+                    INSERT INTO STATIC_DATA 
+                    (AIS_IMO, Name, VesselType, Length, Breadth) 
+                    VALUES (
+                    '{ais_msg["IMO"] if type(ais_msg["IMO"]) is int else 1}', 
+                    '{ais_msg["Name"]}', 
+                    '{ais_msg["VesselType"]}', 
+                    {ais_msg["Length"]}, 
+                    {ais_msg["Breadth"]}); 
+                    SELECT ROW_COUNT();
+                    """
+                    rs = SQL_runner().run(QUERY)
+                    static_insertions += rs[0][0]
+
+                if ais_msg["MsgType"] == "position_report":
+                    
+                    if "RoT" not in ais_msg:
+                        ais_msg["RoT"] = 0 
+
+                    QUERY=f"""
+                    INSERT INTO POSITION_REPORT 
+                    (AISMessage_Id, NavigationalStatus, Longitude, Latitude, RoT, SoG, CoG, Heading) 
+                    VALUES (
+                    5,
+                    '{ais_msg["Status"]}', 
+                    {ais_msg["Position"]["coordinates"][1]}, 
+                    {ais_msg["Position"]["coordinates"][0]}, 
+                    {ais_msg["RoT"]}, 
+                    {ais_msg["SoG"]}, 
+                    {ais_msg["CoG"]}, 
+                    {ais_msg["Heading"]}); 
+                    SELECT ROW_COUNT();
+                    """
+                    rs = SQL_runner().run(QUERY)
+                    pos_insertions += rs[0][0]
+
+            print(f"\nStatic Data Insertions: {static_insertions}")
+            print(f"Position Report Insertions: {pos_insertions}")        
+            print(f"Total Insertion Count: {pos_insertions + static_insertions}")
+            return pos_insertions + static_insertions 
+            # return len(array)
+        
         return -1
 
     def insert_message( self, batch ):
@@ -99,6 +147,10 @@ class TMB_DAO:
         if self.is_stub:
             return array
 
+        QUERY="""
+        SELECT MMSI, Latitude, Longitude, Vessel_IMO FROM POSITION_REPORT, 
+        AIS_MESSAGE WHERE POSITION_REPORT.AISMessage_Id = AIS_MESSAGE.Id ORDER BY Timestamp GROUP BY Vessel_IMO;
+        """
         return -1
 
     def read_most_recent_ship_pos_in_tile( self, batch ):
@@ -167,6 +219,7 @@ class TMB_DAO:
 
         return -1    
 
+    # ! TODO
     def read_last_5_pos( self, batch ):
         """
         Insert a batch of messages
@@ -233,6 +286,7 @@ class TMB_DAO:
 
         return -1
 
+    # ! TODO
     def find_tiles_zoom_2(self, batch):
         """
         Given a background map tile for zoom level 1 (2), find the 4 tiles of zoom level 2 (3) that are contained in it
@@ -463,7 +517,7 @@ class TMBTest( unittest.TestCase ):
         tmb = TMB_DAO(True)
         array = json.loads(self.batch)
         document = tmb.find_tiles_zoom_2(array)
-        self.assertEqual(document, -1)
+        self.assertEqual(document, -1)  
 
 
 if __name__ == '__main__':
