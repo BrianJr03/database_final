@@ -250,14 +250,15 @@ class TMB_DAO:
             return -1
 
         if self.is_stub:
-            mmsi = input("Please enter an MMSI to search:")
+            mmsi = input("Please enter an MMSI to query the most recent position: ")
 
             QUERY = f"""SELECT MMSI, Latitude, Longitude, Vessel_IMO 
             FROM POSITION_REPORT, AIS_MESSAGE WHERE MMSI = {mmsi} AND POSITION_REPORT.AISMessage_Id = AIS_MESSAGE.Id 
             ORDER BY Timestamp LIMIT 1;"""
             rs = SQL_runner().run(QUERY)
-            print(rs)
-            return rs
+            return rs[0]
+
+        return -1    
 
     def read_vessel_info(self, batch):
         """
@@ -384,13 +385,12 @@ class TMB_DAO:
             return -1
 
         if self.is_stub:
-            mmsi = input("Please enter an MMSI to search:")
+            mmsi = input("Please enter an MMSI to query the last 5 positions: ")
 
             QUERY = f"""SELECT MMSI, Latitude, Longitude, Vessel_IMO 
             FROM POSITION_REPORT, AIS_MESSAGE WHERE MMSI = {mmsi} AND POSITION_REPORT.AISMessage_Id = AIS_MESSAGE.Id 
             ORDER BY Timestamp DESC LIMIT 5;"""
             rs = SQL_runner().run(QUERY)
-            print(rs)
             return rs
             # return array[0]
 
@@ -414,16 +414,16 @@ class TMB_DAO:
             return -1
 
         if self.is_stub:
-            return array[0]
+            given_id = "id"
 
-        given_id = "id"
+            QUERY = f"""
+            SELECT MMSI, Latitude, Longitude, Vessel_IMO FROM POSITION_REPORT, AIS_MESSAGE 
+            WHERE AIS_MESSAGE.Id = {given_id} AND POSITION_REPORT.AISMessage_Id = AIS_MESSAGE.Id;
+            """
+            rs = SQL_runner().run(QUERY)
+            return array
 
-        QUERY = f"""
-        SELECT MMSI, Latitude, Longitude, Vessel_IMO FROM POSITION_REPORT, AIS_MESSAGE 
-        WHERE AIS_MESSAGE.Id = {given_id} AND POSITION_REPORT.AISMessage_Id = AIS_MESSAGE.Id;
-        """
-        rs = SQL_runner().run(QUERY)
-        return rs
+        return -1
 
     def read_position_given_port(self, batch):
         """
@@ -447,7 +447,6 @@ class TMB_DAO:
 
         return -1
 
-    # ! TODO
     def find_tiles_zoom_2(self, batch):
         """
         Given a background map tile for zoom level 1 (2), find the 4 tiles of zoom level 2 (3) that are contained in it
@@ -488,7 +487,7 @@ class TMB_DAO:
             return -1
 
         if self.is_stub:
-            return len(array)
+            return bytes(1)
 
         id = "id"
         QUERY = f"""
@@ -585,8 +584,8 @@ class TMBTest(unittest.TestCase):
         Returns: a position document
         """
         tmb = TMB_DAO(True)
-        ships = tmb.read_pos_MMSI(self.batch, 1)
-        self.assertTrue(type(ships) is dict)
+        ships = tmb.read_pos_MMSI(self.batch)
+        self.assertTrue(type(ships) is tuple)
 
     def test_read_pos_MMSI2(self):
         """
@@ -594,7 +593,7 @@ class TMBTest(unittest.TestCase):
         """
         tmb = TMB_DAO(True)
         array = json.loads(self.batch)
-        document = tmb.read_pos_MMSI(array, 1)
+        document = tmb.read_pos_MMSI(array)
         self.assertEqual(document, -1)
 
     def test_read_vessel_info1(self):
@@ -672,11 +671,11 @@ class TMBTest(unittest.TestCase):
     def test_read_last_5_pos1(self):
         """
         Function `read_last_5_pos` takes a JSON parsable string as an input.
-        Returns: a single document (dict)
+        Returns: a list of documents
         """
         tmb = TMB_DAO(True)
         document = tmb.read_last_5_pos(self.batch)
-        self.assertTrue(type(document) is dict)
+        self.assertTrue(type(document) is list)
 
     def test_read_last_5_pos2(self):
         """
