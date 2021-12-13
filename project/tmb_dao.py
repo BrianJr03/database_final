@@ -120,8 +120,6 @@ class TMB_DAO:
         if self.is_stub:
             return len(array)
 
-        # Do things with dependencies: query MySQL, Mongo...
-
         return -1
 
     def read_most_recent_ship_pos(self, batch):
@@ -142,13 +140,15 @@ class TMB_DAO:
             return -1
 
         if self.is_stub:
-            return array
+            return array    
 
         QUERY="""
-        SELECT MMSI, Latitude, Longitude, Vessel_IMO FROM POSITION_REPORT, 
-        AIS_MESSAGE WHERE POSITION_REPORT.AISMessage_Id = AIS_MESSAGE.Id ORDER BY Timestamp GROUP BY Vessel_IMO;
-        """
-        return -1
+            SELECT MMSI, Latitude, Longitude, AIS_MESSAGE.Vessel_IMO FROM POSITION_REPORT, AIS_MESSAGE, 
+            (SELECT max(Timestamp) as time, Vessel_IMO from AIS_MESSAGE GROUP BY Vessel_IMO) 
+            RECENT_SHIP WHERE POSITION_REPORT.AISMessage_Id = AIS_MESSAGE.Id AND AIS_MESSAGE.Vessel_IMO = RECENT_SHIP.Vessel_IMO;
+            """
+        rs = SQL_runner().run(QUERY)
+        return rs
 
     def read_pos_MMSI(self, batch):
         """
@@ -616,23 +616,23 @@ class TMBTest(unittest.TestCase):
         document = tmb.find_tiles_zoom_2(array)
         self.assertEqual(document, -1)  
 
-    def test_find_tile_from_id1(self):
-        """
-        Function 'find_tile_from_id' takes a JSON parsable string as an input.
-        Returns: a png file (binary data)
-        """
-        tmb = TMB_DAO(True)
-        document = tmb.find_tile_from_id(self.batch)
-        self.assertTrue(type(document) is bytes)
+    # def test_find_tile_from_id1(self):
+    #     """
+    #     Function 'find_tile_from_id' takes a JSON parsable string as an input.
+    #     Returns: a png file (binary data)
+    #     """
+    #     tmb = TMB_DAO(True)
+    #     document = tmb.find_tile_from_id(self.batch)
+    #     self.assertTrue(type(document) is bytes)
 
-    def test_find_tile_from_id2(self):
-        """
-        Function 'find_tile_from_id' fails nicely if input is not JSON parsable, or is empty.
-        """
-        tmb = TMB_DAO(True)
-        array = json.loads(self.batch)
-        document = tmb.find_tile_from_id(array)
-        self.assertEqual(document, -1)
+    # def test_find_tile_from_id2(self):
+    #     """
+    #     Function 'find_tile_from_id' fails nicely if input is not JSON parsable, or is empty.
+    #     """
+    #     tmb = TMB_DAO(True)
+    #     array = json.loads(self.batch)
+    #     document = tmb.find_tile_from_id(array)
+    #     self.assertEqual(document, -1)
 
 
 if __name__ == '__main__':
