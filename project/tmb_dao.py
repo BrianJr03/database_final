@@ -108,7 +108,7 @@ class TMB_DAO:
                     """  
                     rs = SQL_runner().run(QUERY) 
                     print(rs)
-                    # deletions += rs[0][0]
+                    deletions += rs[0]
                     print(deletions)            
             return len(array)
         
@@ -164,7 +164,7 @@ class TMB_DAO:
         """
         return -1
 
-    def read_pos_MMSI(self, batch):
+    def read_pos_MMSI(self, batch, MMSI):
         """
         Read most recent position of given MMSI
 
@@ -183,6 +183,7 @@ class TMB_DAO:
 
         if self.is_stub:
             return array[0]
+
 
         return -1
 
