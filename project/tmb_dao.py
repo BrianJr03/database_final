@@ -165,17 +165,16 @@ class TMB_DAO:
 
                 if now - date_time_obj > timedelta(minutes=5):
                     QUERY = f"""
-                    DELETE FROM AIS_MESSAGE WHERE Timestamp = {timestamp};
+                    DELETE FROM AIS_MESSAGE, POSITION_REPORT, STATIC_DATA 
+                    WHERE Timestamp = '{date_time_obj}' AND AIS_MESSAGE.Id = POSITION_REPORT.AISMessage_Id AND 
+                    AIS_MESSAGE.Id = STATIC_DATA.AISMessage_Id AND POSITION_REPORT.LastStaticData_Id = STATIC_DATA.DestinationPort_Id;
                     SELECT ROW_COUNT();
                     """
-                    print(QUERY)
-                    rs = SQL_runner().run(QUERY)
-                    print(rs)
-                    # deletions += rs[0]
-                    print(deletions)
-            return len(array)
 
-        return -1
+                    rs = SQL_runner().run(QUERY)
+                    deletions += rs[0][0]
+                    print(deletions)
+            return deletions
 
     def read_most_recent_ship_pos(self, batch):
         """
@@ -195,7 +194,7 @@ class TMB_DAO:
             return -1
 
         if self.is_stub:
-            return array    
+            return array
 
         QUERY="""
             SELECT MMSI, Latitude, Longitude, AIS_MESSAGE.Vessel_IMO FROM POSITION_REPORT, AIS_MESSAGE, 
@@ -223,10 +222,14 @@ class TMB_DAO:
             return -1
 
         if self.is_stub:
-            return array[0]
+            mmsi = input("Please enter an MMSI to search:")
 
-
-        return -1
+            QUERY = f"""SELECT MMSI, Latitude, Longitude, Vessel_IMO 
+            FROM POSITION_REPORT, AIS_MESSAGE WHERE MMSI = {mmsi} AND POSITION_REPORT.AISMessage_Id = AIS_MESSAGE.Id 
+            ORDER BY Timestamp LIMIT 1;"""
+            rs = SQL_runner().run(QUERY)
+            print(rs)
+            return rs
 
     def read_vessel_info(self, batch):
         """
