@@ -7,103 +7,7 @@ from mysqlutils import SQL_runner
 class TMB_DAO:
 
     def __init__(self, stub=False):
-        self.is_stub = stub
-
-    def insert_message_batch(self, batch):
-        """
-        Insert a batch of messages
-
-        :param: batch: a string that represent a JSON array of docs
-        :type: batch: str
-        :return: Number of successful insertions
-        :rtype: int
-        """
-        if batch == "" or batch == None:
-            return -1
-
-        try:
-            array = json.loads(batch)
-        except Exception:
-            return -1
-
-        if self.is_stub:
-            # return len(array)
-
-            pos_insertions = 0
-            static_insertions = 0
-            ais_msg_insertions = 0    
-
-            for ais_msg in array:
-
-                date_time_obj = datetime.strptime(ais_msg["Timestamp"], '%Y-%m-%dT%H:%M:%S.%fZ')
-
-                # TODO: Auto Increment IDs
-
-                QUERY1=f"""
-                SELECT Id FROM AIS_MESSAGE  
-                ORDER BY Id DESC  
-                LIMIT 1;
-                """
-                rs = SQL_runner().run(QUERY1)
-                id = rs[0][0]
-                id += 1
-
-                QUERY2=f"""
-                INSERT INTO AIS_MESSAGE 
-                (Id, Timestamp, MMSI, Class) 
-                VALUES (
-                {id},
-                '{date_time_obj}', 
-                '{ais_msg["MMSI"]}', 
-                '{ais_msg["Class"]}');
-                SELECT ROW_COUNT();
-                """
-                rs = SQL_runner().run(QUERY2)
-                ais_msg_insertions += rs[0][0]
-
-                if ais_msg["MsgType"] == "static_data":
-
-                    QUERY3=f"""
-                    INSERT INTO STATIC_DATA 
-                    (AIS_IMO, Name, VesselType, Length, Breadth) 
-                    VALUES (
-                    '{ais_msg["IMO"] if type(ais_msg["IMO"]) is int else 1}', 
-                    '{ais_msg["Name"]}', 
-                    '{ais_msg["VesselType"]}', 
-                    {ais_msg["Length"]}, 
-                    {ais_msg["Breadth"]}); 
-                    SELECT ROW_COUNT();
-                    """
-                    rs = SQL_runner().run(QUERY3)
-                    static_insertions += rs[0][0]
-
-                if ais_msg["MsgType"] == "position_report":
-                    
-                    if "RoT" not in ais_msg:
-                        ais_msg["RoT"] = 0 
-
-                    QUERY4=f"""
-                    INSERT INTO POSITION_REPORT 
-                    (AISMessage_Id, NavigationalStatus, Longitude, Latitude, RoT, SoG, CoG, Heading) 
-                    VALUES (
-                    5, # TODO: This shouldn't be hardcoded, not sure how to handle the unique id here
-                    '{ais_msg["Status"]}', 
-                    {ais_msg["Position"]["coordinates"][1]}, 
-                    {ais_msg["Position"]["coordinates"][0]}, 
-                    {ais_msg["RoT"]}, 
-                    {ais_msg["SoG"]}, 
-                    {ais_msg["CoG"]}, 
-                    {ais_msg["Heading"]}); 
-                    SELECT ROW_COUNT();
-                    """
-                    rs = SQL_runner().run(QUERY4)
-                    pos_insertions += rs[0][0]
-
-            print(f"\nAIS Message Insertions: {ais_msg_insertions}")
-            print(f"Static Data Insertions: {static_insertions}")
-            print(f"Position Report Insertions: {pos_insertions}")        
-            print(f"Total Insertion Count: {pos_insertions + static_insertions + ais_msg_insertions}")
-            return pos_insertions + static_insertions     
+        self.is_stub = stub    
 
     def insert_message_batch(self, batch):
         """
@@ -336,10 +240,13 @@ class TMB_DAO:
         if self.is_stub:
             return array
 
-        QUERY="""
-            SELECT MMSI, Latitude, Longitude, AIS_MESSAGE.Vessel_IMO FROM POSITION_REPORT, AIS_MESSAGE, 
+        tile_id = input("Please eneter a tile id to search:")    
+
+        QUERY=f"""
+            SELECT MMSI, Latitude, Longitude, AIS_MESSAGE.Vessel_IMO FROM POSITION_REPORT, AIS_MESSAGE, MAP_VIEW
             (SELECT max(Timestamp) as time, Vessel_IMO from AIS_MESSAGE GROUP BY Vessel_IMO) 
-            RECENT_SHIP WHERE POSITION_REPORT.AISMessage_Id = AIS_MESSAGE.Id AND AIS_MESSAGE.Vessel_IMO = RECENT_SHIP.Vessel_IMO;
+            RECENT_SHIP WHERE POSITION_REPORT.AISMessage_Id = AIS_MESSAGE.Id AND AIS_MESSAGE.Vessel_IMO = RECENT_SHIP.Vessel_IMO
+            AND {tile_id} = POSITION_REPORT.MapView1_Id;
             """
         rs = SQL_runner().run(QUERY)
         return rs        
@@ -415,7 +322,15 @@ class TMB_DAO:
             return -1
 
         if self.is_stub:
-            return array[0]
+            mmsi = input("Please enter an MMSI to search:")
+
+            QUERY = f"""SELECT MMSI, Latitude, Longitude, Vessel_IMO 
+            FROM POSITION_REPORT, AIS_MESSAGE WHERE MMSI = {mmsi} AND POSITION_REPORT.AISMessage_Id = AIS_MESSAGE.Id 
+            ORDER BY Timestamp DESC LIMIT 5;"""
+            rs = SQL_runner().run(QUERY)
+            print(rs)
+            return rs
+            # return array[0]
 
         return -1
 
