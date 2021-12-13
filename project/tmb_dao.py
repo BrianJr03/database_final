@@ -37,6 +37,8 @@ class TMB_DAO:
 
                 date_time_obj = datetime.strptime(ais_msg["Timestamp"], '%Y-%m-%dT%H:%M:%S.%fZ')
 
+                # TODO: Auto Increment IDs
+
                 QUERY1=f"""
                 SELECT Id FROM AIS_MESSAGE  
                 ORDER BY Id DESC  
