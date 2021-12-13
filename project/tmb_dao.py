@@ -1,6 +1,6 @@
 import unittest
 import json
-from datetime import datetime, time, timedelta
+from datetime import datetime, timedelta
 import sys, re
 from mysqlutils import SQL_runner
 
@@ -105,6 +105,67 @@ class TMB_DAO:
             print(f"Total Insertion Count: {pos_insertions + static_insertions + ais_msg_insertions}")
             return pos_insertions + static_insertions + ais_msg_insertions
 
+    def insert_message(self, batch):
+        """
+        Insert an AIS message
+        :param: batch: a string that represent a JSON array of docs
+        :type: batch: str
+        :return: completion code number
+        :rtype: int
+        """
+        if batch == "" or batch == None:
+            return -1
+
+        try:
+            array = json.loads(batch)
+        except Exception:
+            return -1
+
+        if self.is_stub:
+            return len(array)
+
+        insertions = 0
+
+        for ais_msg in array:
+            if ais_msg["MsgType"] == "static_data":
+                QUERY = f"""
+                        INSERT INTO STATIC_DATA 
+                        (AIS_IMO, Name, VesselType, Length, Breadth) 
+                        VALUES (
+                        '{ais_msg["IMO"] if type(ais_msg["IMO"]) is int else 1}', 
+                        '{ais_msg["Name"]}', 
+                        '{ais_msg["VesselType"]}', 
+                        {ais_msg["Length"]}, 
+                        {ais_msg["Breadth"]}); 
+                        SELECT ROW_COUNT();
+                        """
+                rs = SQL_runner().run(QUERY)
+                insertions += rs[0][0]
+
+            if ais_msg["MsgType"] == "position_report":
+
+                if "RoT" not in ais_msg:
+                    ais_msg["RoT"] = 0
+
+                QUERY = f"""
+                        INSERT INTO POSITION_REPORT 
+                        (AISMessage_Id, NavigationalStatus, Longitude, Latitude, RoT, SoG, CoG, Heading) 
+                        VALUES (
+                        5,
+                        '{ais_msg["Status"]}', 
+                        {ais_msg["Position"]["coordinates"][1]}, 
+                        {ais_msg["Position"]["coordinates"][0]}, 
+                        {ais_msg["RoT"]}, 
+                        {ais_msg["SoG"]}, 
+                        {ais_msg["CoG"]}, 
+                        {ais_msg["Heading"]}); 
+                        SELECT ROW_COUNT();
+                        """
+                rs = SQL_runner().run(QUERY)
+                insertions += rs[0][0]
+
+        return insertions        
+
     def delete_all_msg_timestamp(self, batch):
         """
         Delete all AIS Messages older than 5 minutes
@@ -128,6 +189,7 @@ class TMB_DAO:
                 now = datetime.now()
                 timestamp = ais_msg["Timestamp"]
                 date_time_obj = datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S.%fZ')
+                print(date_time_obj)
 
                 if now - date_time_obj > timedelta(minutes=5):
                     QUERY = f"""
@@ -426,7 +488,7 @@ class TMB_DAO:
             return -1
 
         if self.is_stub:
-            return bytes(array)
+            return len(array)
 
         id = "id"
         QUERY = f"""
@@ -679,23 +741,23 @@ class TMBTest(unittest.TestCase):
         document = tmb.find_tiles_zoom_2(array)
         self.assertEqual(document, -1)  
 
-    # def test_find_tile_from_id1(self):
-    #     """
-    #     Function 'find_tile_from_id' takes a JSON parsable string as an input.
-    #     Returns: a png file (binary data)
-    #     """
-    #     tmb = TMB_DAO(True)
-    #     document = tmb.find_tile_from_id(self.batch)
-    #     self.assertTrue(type(document) is bytes)
+    def test_find_tile_from_id1(self):
+        """
+        Function 'find_tile_from_id' takes a JSON parsable string as an input.
+        Returns: a png file (binary data)
+        """
+        tmb = TMB_DAO(True)
+        document = tmb.find_tile_from_id(self.batch)
+        self.assertTrue(type(document) is bytes)
 
-    # def test_find_tile_from_id2(self):
-        # """
-        # Function 'find_tile_from_id' fails nicely if input is not JSON parsable, or is empty.
-        # """
-        # tmb = TMB_DAO(True)
-        # array = json.loads(self.batch)
-        # document = tmb.find_tile_from_id(array)
-        # self.assertEqual(document, -1)
+    def test_find_tile_from_id2(self):
+        """
+        Function 'find_tile_from_id' fails nicely if input is not JSON parsable, or is empty.
+        """
+        tmb = TMB_DAO(True)
+        array = json.loads(self.batch)
+        document = tmb.find_tile_from_id(array)
+        self.assertEqual(document, -1)
 
 
 if __name__ == '__main__':
