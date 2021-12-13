@@ -30,7 +30,53 @@ class TMB_DAO:
         if self.is_stub:
             return len(array)
 
-        return -1
+        pos_insertions = 0
+        static_insertions = 0    
+
+        for ais_msg in array:
+
+            if ais_msg["MsgType"] == "static_data":
+
+                QUERY=f"""
+                INSERT INTO STATIC_DATA 
+                (AIS_IMO, Name, VesselType, Length, Breadth) 
+                VALUES (
+                '{ais_msg["IMO"] if type(ais_msg["IMO"]) is int else 1}', 
+                '{ais_msg["Name"]}', 
+                '{ais_msg["VesselType"]}', 
+                {ais_msg["Length"]}, 
+                {ais_msg["Breadth"]}); 
+                SELECT ROW_COUNT();
+                """
+                rs = SQL_runner().run(QUERY)
+                static_insertions += rs[0][0]
+
+            if ais_msg["MsgType"] == "position_report":
+                
+                if "RoT" not in ais_msg:
+                    ais_msg["RoT"] = 0 
+
+                QUERY=f"""
+                INSERT INTO POSITION_REPORT 
+                (AISMessage_Id, NavigationalStatus, Longitude, Latitude, RoT, SoG, CoG, Heading) 
+                VALUES (
+                5,
+                '{ais_msg["Status"]}', 
+                {ais_msg["Position"]["coordinates"][1]}, 
+                {ais_msg["Position"]["coordinates"][0]}, 
+                {ais_msg["RoT"]}, 
+                {ais_msg["SoG"]}, 
+                {ais_msg["CoG"]}, 
+                {ais_msg["Heading"]}); 
+                SELECT ROW_COUNT();
+                """
+                rs = SQL_runner().run(QUERY)
+                pos_insertions += rs[0][0]
+
+        print(f"\nStatic Data Insertions: {static_insertions}")
+        print(f"Position Report Insertions: {pos_insertions}")        
+        print(f"Total Insertion Count: {pos_insertions + static_insertions}")
+        return pos_insertions + static_insertions     
 
     def insert_message(self, batch):
         """
@@ -49,55 +95,8 @@ class TMB_DAO:
         except Exception:
             return -1
 
-        pos_insertions = 0
-        static_insertions = 0
-
         if self.is_stub:
-            for ais_msg in array:
-
-                if ais_msg["MsgType"] == "static_data":
-
-                    QUERY=f"""
-                    INSERT INTO STATIC_DATA 
-                    (AIS_IMO, Name, VesselType, Length, Breadth) 
-                    VALUES (
-                    '{ais_msg["IMO"] if type(ais_msg["IMO"]) is int else 1}', 
-                    '{ais_msg["Name"]}', 
-                    '{ais_msg["VesselType"]}', 
-                    {ais_msg["Length"]}, 
-                    {ais_msg["Breadth"]}); 
-                    SELECT ROW_COUNT();
-                    """
-                    rs = SQL_runner().run(QUERY)
-                    static_insertions += rs[0][0]
-
-                if ais_msg["MsgType"] == "position_report":
-                    
-                    if "RoT" not in ais_msg:
-                        ais_msg["RoT"] = 0 
-
-                    QUERY=f"""
-                    INSERT INTO POSITION_REPORT 
-                    (AISMessage_Id, NavigationalStatus, Longitude, Latitude, RoT, SoG, CoG, Heading) 
-                    VALUES (
-                    5,
-                    '{ais_msg["Status"]}', 
-                    {ais_msg["Position"]["coordinates"][1]}, 
-                    {ais_msg["Position"]["coordinates"][0]}, 
-                    {ais_msg["RoT"]}, 
-                    {ais_msg["SoG"]}, 
-                    {ais_msg["CoG"]}, 
-                    {ais_msg["Heading"]}); 
-                    SELECT ROW_COUNT();
-                    """
-                    rs = SQL_runner().run(QUERY)
-                    pos_insertions += rs[0][0]
-
-            print(f"\nStatic Data Insertions: {static_insertions}")
-            print(f"Position Report Insertions: {pos_insertions}")        
-            print(f"Total Insertion Count: {pos_insertions + static_insertions}")
-            return pos_insertions + static_insertions 
-            # return len(array)
+            return len(array)
         
         return -1
 
@@ -369,7 +368,7 @@ class TMB_DAO:
             return -1
 
         if self.is_stub:
-            return array
+            return bytes(array)
 
         return -1
 
@@ -623,7 +622,7 @@ class TMBTest(unittest.TestCase):
         Returns: a png file (binary data)
         """
         tmb = TMB_DAO(True)
-        document = tmb.find_tiles_zoom_2(self.batch)
+        document = tmb.find_tile_from_id(self.batch)
         self.assertTrue(type(document) is bytes)
 
     def test_find_tile_from_id2(self):
