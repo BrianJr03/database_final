@@ -95,24 +95,49 @@ class TMB_DAO:
             return -1
 
         if self.is_stub:
-            deletions = 0
-            for ais_msg in array:
-                now = datetime.now()
-                timestamp = ais_msg["Timestamp"]
-                date_time_obj = datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S.%fZ')
-
-                if now - date_time_obj > timedelta(minutes=5):
-                    QUERY = f"""
-                    DELETE FROM AIS_MESSAGE WHERE Timestamp = {timestamp};
-                    SELECT ROW_COUNT();
-                    """  
-                    rs = SQL_runner().run(QUERY) 
-                    print(rs)
-                    deletions += rs[0]
-                    print(deletions)            
             return len(array)
-        
-        return -1
+
+        insertions = 0
+
+        for ais_msg in array:
+            if ais_msg["MsgType"] == "static_data":
+                QUERY = f"""
+                        INSERT INTO STATIC_DATA 
+                        (AIS_IMO, Name, VesselType, Length, Breadth) 
+                        VALUES (
+                        '{ais_msg["IMO"] if type(ais_msg["IMO"]) is int else 1}', 
+                        '{ais_msg["Name"]}', 
+                        '{ais_msg["VesselType"]}', 
+                        {ais_msg["Length"]}, 
+                        {ais_msg["Breadth"]}); 
+                        SELECT ROW_COUNT();
+                        """
+                rs = SQL_runner().run(QUERY)
+                insertions += rs[0][0]
+
+            if ais_msg["MsgType"] == "position_report":
+
+                if "RoT" not in ais_msg:
+                    ais_msg["RoT"] = 0
+
+                QUERY = f"""
+                        INSERT INTO POSITION_REPORT 
+                        (AISMessage_Id, NavigationalStatus, Longitude, Latitude, RoT, SoG, CoG, Heading) 
+                        VALUES (
+                        5,
+                        '{ais_msg["Status"]}', 
+                        {ais_msg["Position"]["coordinates"][1]}, 
+                        {ais_msg["Position"]["coordinates"][0]}, 
+                        {ais_msg["RoT"]}, 
+                        {ais_msg["SoG"]}, 
+                        {ais_msg["CoG"]}, 
+                        {ais_msg["Heading"]}); 
+                        SELECT ROW_COUNT();
+                        """
+                rs = SQL_runner().run(QUERY)
+                insertions += rs[0][0]
+
+        return insertions
 
     def delete_all_msg_timestamp(self, batch):
         """
@@ -132,6 +157,22 @@ class TMB_DAO:
             return -1
 
         if self.is_stub:
+            deletions = 0
+            for ais_msg in array:
+                now = datetime.now()
+                timestamp = ais_msg["Timestamp"]
+                date_time_obj = datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S.%fZ')
+
+                if now - date_time_obj > timedelta(minutes=5):
+                    QUERY = f"""
+                    DELETE FROM AIS_MESSAGE WHERE Timestamp = {timestamp};
+                    SELECT ROW_COUNT();
+                    """
+                    print(QUERY)
+                    rs = SQL_runner().run(QUERY)
+                    print(rs)
+                    # deletions += rs[0]
+                    print(deletions)
             return len(array)
 
         return -1
@@ -164,7 +205,7 @@ class TMB_DAO:
         rs = SQL_runner().run(QUERY)
         return rs
 
-    def read_pos_MMSI(self, batch, MMSI):
+    def read_pos_MMSI(self, batch):
         """
         Read most recent position of given MMSI
 
