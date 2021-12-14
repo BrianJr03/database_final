@@ -198,9 +198,8 @@ class TMB_DAO:
                     AIS_MESSAGE.Id = STATIC_DATA.AISMessage_Id AND POSITION_REPORT.LastStaticData_Id = STATIC_DATA.DestinationPort_Id;
                     SELECT ROW_COUNT();
                     """
-
                     rs = SQL_runner().run(QUERY)
-                    deletions += rs[0][0]
+                    deletions += rs[0]
                     print(deletions)
             return deletions
 
@@ -286,7 +285,9 @@ class TMB_DAO:
 
         if self.is_stub:
             return array[0]
-             #SELECT MMSI, Longituide, Lattitude, IMO, Name, CallSign FROM VESSEL, POSITION_REPORT WHERE POSITION_REPORT.VESSEL= VESSEL.MMSI;
+        QUERY = """
+        SELECT MMSI, Longitude, Latitude, IMO, Name, CallSign FROM VESSEL, POSITION_REPORT WHERE POSITION_REPORT.VESSEL= VESSEL.MMSI;
+        """
 
 
         return -1
@@ -451,7 +452,7 @@ class TMB_DAO:
             WHERE AIS_MESSAGE.Id = {given_id} AND POSITION_REPORT.AISMessage_Id = AIS_MESSAGE.Id;
             """
             rs = SQL_runner().run(QUERY)
-            return array
+            return rs
 
         return -1
 
