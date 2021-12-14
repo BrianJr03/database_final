@@ -252,6 +252,12 @@ class TMB_DAO:
         if self.is_stub:
             mmsi = input("Please enter an MMSI to query the most recent position: ")
 
+            try:
+                int(mmsi)
+            except ValueError:
+                print("Value must be an integer.")
+                return - 1
+
             QUERY = f"""SELECT MMSI, Latitude, Longitude, Vessel_IMO 
             FROM POSITION_REPORT, AIS_MESSAGE WHERE MMSI = {mmsi} AND POSITION_REPORT.AISMessage_Id = AIS_MESSAGE.Id 
             ORDER BY Timestamp LIMIT 1;"""
@@ -305,7 +311,13 @@ class TMB_DAO:
         if self.is_stub:
             return array
 
-        tile_id = input("Please eneter a tile id to search:")    
+        tile_id = input("Please eneter a tile id to search: ") 
+           
+        try:
+            int(tile_id)
+        except ValueError:
+            print("Value must be an integer.")
+            return - 1  
 
         QUERY=f"""
             SELECT MMSI, Latitude, Longitude, AIS_MESSAGE.Vessel_IMO FROM POSITION_REPORT, AIS_MESSAGE, MAP_VIEW
@@ -336,11 +348,12 @@ class TMB_DAO:
         if self.is_stub:
             return array
 
-        name = "name"
-        country = "country"
+        print("Please provide the following info to read all matching ports")
+        name = input("Enter the Port's name")
+        country = input("Enter the country the Port is located in: ")
 
         QUERY = f"""
-        SELECT * FROM PORT WHERE Name = {name} and Country = {country};
+        SELECT * FROM PORT WHERE Name = '{name}' and Country = '{country}';
         """
 
         rs = SQL_runner().run(QUERY)
@@ -365,8 +378,16 @@ class TMB_DAO:
             return -1   
 
         if self.is_stub:
-            return array
-    #Select longituide, latitude, Scale FROM PORT, MAP_VIEW WHERE Scale = 3;
+            print("Please provide the following info to read all ship positions in the tile of scale 3")
+            name = input("Enter the Port's name: ")
+            country = input("Enter the country the Port is located in: ") 
+
+            QUERY=f"""
+            Select Longitude, Latitude, Scale FROM PORT, MAP_VIEW
+            WHERE Scale = 3 AND Port.Name = '{name}' AND Port.Country = '{country}';
+            """
+            rs = SQL_runner().run(QUERY)
+            return rs
 
         return -1    
 
@@ -389,6 +410,12 @@ class TMB_DAO:
 
         if self.is_stub:
             mmsi = input("Please enter an MMSI to query the last 5 positions: ")
+
+            try:
+                int(mmsi)
+            except ValueError:
+                print("Value must be an integer.")
+                return - 1
 
             QUERY = f"""SELECT MMSI, Latitude, Longitude, Vessel_IMO 
             FROM POSITION_REPORT, AIS_MESSAGE WHERE MMSI = {mmsi} AND POSITION_REPORT.AISMessage_Id = AIS_MESSAGE.Id 
