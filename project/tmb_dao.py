@@ -280,6 +280,8 @@ class TMB_DAO:
 
         if self.is_stub:
             return array[0]
+             #SELECT MMSI, Longituide, Lattitude, IMO, Name, CallSign FROM VESSEL, POSITION_REPORT WHERE POSITION_REPORT.VESSEL= VESSEL.MMSI;
+
 
         return -1
 
@@ -364,6 +366,7 @@ class TMB_DAO:
 
         if self.is_stub:
             return array
+    #Select longituide, latitude, Scale FROM PORT, MAP_VIEW WHERE Scale = 3;
 
         return -1    
 
@@ -444,7 +447,7 @@ class TMB_DAO:
 
         if self.is_stub:
             return array
-
+        #SELECT MMSI, Longitude, Latitude, Vessel.IMO  FROM POSITION_REPORT, AIS_MESSAGE, STATIC_DATA WHERE POSITION_REPORT.
         return -1
 
     def find_tiles_zoom_2(self, batch):
