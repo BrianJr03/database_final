@@ -30,7 +30,6 @@ class MySQLConnectionManager:
 		return self.cnx
 
 	def __exit__(self, *ignore):
-		print("Closing connection")
 		self.cnx.close()
 
 class MySQLCursorManager:
@@ -53,7 +52,6 @@ class MySQLCursorManager:
 		return self.cursor
 
 	def __exit__(self, *ignore):
-		print("Closing cursor")
 		self.cursor.close()
 
 
