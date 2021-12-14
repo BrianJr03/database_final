@@ -86,7 +86,7 @@ class TMB_DAO:
                     INSERT INTO POSITION_REPORT 
                     (AISMessage_Id, NavigationalStatus, Longitude, Latitude, RoT, SoG, CoG, Heading) 
                     VALUES (
-                    5, # TODO: This shouldn't be hardcoded, not sure how to handle the unique id here
+                    5,
                     '{ais_msg["Status"]}', 
                     {ais_msg["Position"]["coordinates"][1]}, 
                     {ais_msg["Position"]["coordinates"][0]}, 
@@ -189,19 +189,19 @@ class TMB_DAO:
                 now = datetime.now()
                 timestamp = ais_msg["Timestamp"]
                 date_time_obj = datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S.%fZ')
-                print(date_time_obj)
 
                 if now - date_time_obj > timedelta(minutes=5):
                     QUERY = f"""
-                    DELETE FROM AIS_MESSAGE, POSITION_REPORT, STATIC_DATA 
-                    WHERE Timestamp = '{date_time_obj}' AND AIS_MESSAGE.Id = POSITION_REPORT.AISMessage_Id AND 
-                    AIS_MESSAGE.Id = STATIC_DATA.AISMessage_Id AND POSITION_REPORT.LastStaticData_Id = STATIC_DATA.DestinationPort_Id;
+                    delete AIS_MESSAGE, POSITION_REPORT, STATIC_DATA 
+                    from AIS_MESSAGE 
+                    LEFT join POSITION_REPORT on AIS_MESSAGE.Id = POSITION_REPORT.AISMessage_Id 
+                    LEFT join STATIC_DATA on AIS_MESSAGE.Id = STATIC_DATA.AISMessage_Id 
+                    WHERE Timestamp = '{date_time_obj}' AND POSITION_REPORT.LastStaticData_Id = STATIC_DATA.DestinationPort_Id ;
                     SELECT ROW_COUNT();
                     """
-
                     rs = SQL_runner().run(QUERY)
                     deletions += rs[0][0]
-                    print(deletions)
+            print(f"Deletions: {deletions}")
             return deletions
 
     def read_most_recent_ship_pos(self, batch):
